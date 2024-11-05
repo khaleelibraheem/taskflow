@@ -26,7 +26,7 @@ const jsonLd = {
 };
 
 export const metadata = {
-  metadataBase: new URL("https://taskflow.vercel.app"),
+  metadataBase: new URL("https://taskkflow.vercel.app"),
   canonical: "https://taskkflow.vercel.app",
 
   title: {
@@ -64,7 +64,7 @@ export const metadata = {
   openGraph: {
     type: "website",
     locale: "en_US",
-    url: "/",
+    url: "https://taskkflow.vercel.app",
     title: "TaskFlow - Simple Personal Task Management",
     description:
       "Free personal task management tool to organize your work and boost productivity. Simple, secure, and built for individual use.",
