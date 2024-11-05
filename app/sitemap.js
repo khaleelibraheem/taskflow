@@ -1,6 +1,6 @@
 // app/sitemap.js
 export default async function sitemap() {
-  const baseUrl = "https://taskflow.vercel.app";
+  const baseUrl = "https://taskkflow.vercel.app";
 
   // Add all your static pages
   const routes = [
