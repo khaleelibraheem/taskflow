@@ -27,7 +27,7 @@ const jsonLd = {
 
 export const metadata = {
   metadataBase: new URL("https://taskflow.vercel.app"),
-  canonical: "https://taskflow.vercel.app",
+  canonical: "https://taskkflow.vercel.app",
 
   title: {
     template: "%s | TaskFlow",
@@ -57,7 +57,7 @@ export const metadata = {
 
   alternates: {
     languages: {
-      "en-US": "https://taskflow.vercel.app",
+      "en-US": "https://taskkflow.vercel.app",
     },
   },
 
