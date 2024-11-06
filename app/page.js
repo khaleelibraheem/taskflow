@@ -117,7 +117,7 @@ export default function Home() {
                   asChild
                   className="rounded-lg font-medium"
                 >
-                  <Link href="/sign-in">Sign In</Link>
+                  <Link href="/sign-in">Sign In Now</Link>
                 </Button>
               </>
             ) : (
