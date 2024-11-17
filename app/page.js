@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { useAuth } from "@clerk/nextjs";
 import {
+  ArrowRight,
   CheckCircle,
   Sparkles,
   BarChart3,
@@ -11,35 +12,14 @@ import {
   Smartphone,
   Shield,
   Check,
-  Star,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { ResponsiveMockup } from "@/components/ui/responsive-mockup";
+import { Navigation } from "@/components/shared/navigation";
 
 export default function Home() {
   const { isSignedIn } = useAuth();
 
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-      },
-    },
-  };
   const features = [
     {
       icon: CheckCircle,
@@ -80,95 +60,99 @@ export default function Home() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen pt-16">
-      {/* Hero Section */}
-      <section className="flex flex-col items-center justify-center min-h-[calc(100vh-4rem)] px-4 pb-12 pt-24 bg-gradient-to-b from-background to-muted/20">
-        <motion.div
-          className="text-center space-y-6 max-w-3xl mx-auto"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="flex items-center justify-center mb-6">
-            <span className="px-4 py-1.5 rounded-full text-sm font-medium bg-primary/10 text-primary">
-              Welcome to TaskFlow
-            </span>
-          </div>
-          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl text-foreground">
-            Manage tasks with ease
-          </h1>
-          <p className="text-lg text-muted-foreground sm:text-xl font-medium leading-relaxed">
-            A simple, free tool to organize your tasks and boost productivity
-          </p>
-          <motion.div
-            className="flex gap-4 justify-center"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            {!isSignedIn ? (
-              <>
-                <Button asChild size="lg" className="rounded-lg font-medium">
-                  <Link href="/sign-up">Get Started</Link>
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  asChild
-                  className="rounded-lg font-medium"
-                >
-                  <Link href="/sign-in">Sign In Now</Link>
-                </Button>
-              </>
-            ) : (
-              <Button asChild size="lg" className="rounded-lg font-medium">
-                <Link href="/dashboard">Go to Dashboard</Link>
-              </Button>
-            )}
-          </motion.div>
-        </motion.div>
+    <div className="relative min-h-screen">
+      {/* Modern Navbar */}
+      <Navigation />
 
-        {/* Responsive Mockup */}
-        <motion.div
-          className="w-full mt-16"
-          initial={{ opacity: 0, y: 100 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.7 }}
-        >
-          <ResponsiveMockup />
-        </motion.div>
+      {/* Hero Section */}
+      <section className="relative pt-32 pb-24 overflow-hidden">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6">
+          <motion.div
+            className="text-center space-y-8 max-w-3xl mx-auto"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-primary/10 text-primary mb-6">
+              <span className="text-sm font-medium">Welcome to TaskFlow</span>
+            </div>
+            <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
+              <span className="bg-gradient-to-r from-primary via-purple-500 to-pink-500 text-transparent bg-clip-text">
+                Manage tasks with unmatched simplicity
+              </span>
+            </h1>
+            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
+              A simple, free tool designed to help you organize tasks and boost
+              productivity with a modern approach to personal task management.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+              {!isSignedIn ? (
+                <>
+                  <Button size="lg" className="w-full sm:w-auto" asChild>
+                    <Link href="/sign-up">
+                      Get Started Free
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="w-full sm:w-auto"
+                    asChild
+                  >
+                    <Link href="/sign-in">Sign In</Link>
+                  </Button>
+                </>
+              ) : (
+                <Button size="lg" asChild>
+                  <Link href="/dashboard">
+                    Go to Dashboard
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </motion.div>
+
+          {/* App Preview */}
+          <motion.div
+            className="mt-20"
+            initial={{ opacity: 0, y: 40 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.7 }}
+          >
+            <ResponsiveMockup />
+          </motion.div>
+        </div>
       </section>
 
-      {/* Features Section */}
-      <section className="py-24 px-4 bg-muted/10">
-        <div className="max-w-7xl mx-auto">
+      {/* Features Grid */}
+      <section className="py-24 bg-muted/10">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
             className="text-center mb-16"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.5 }}
           >
             <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
               Everything you need to stay organized
             </h2>
-            <p className="text-lg text-muted-foreground">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               Powerful features to help you manage your tasks and projects
               effectively
             </p>
           </motion.div>
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
-                variants={itemVariants}
-                className="p-6 rounded-2xl border bg-card hover:shadow-lg transition-all"
+                className="relative p-6 rounded-2xl border bg-card hover:shadow-lg transition-all"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
                 whileHover={{ y: -5 }}
               >
                 <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
@@ -178,64 +162,13 @@ export default function Home() {
                 <p className="text-muted-foreground">{feature.description}</p>
               </motion.div>
             ))}
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Add Why TaskFlow section after Features Section */}
-      <section className="py-24 px-4">
-        <div className="max-w-7xl mx-auto">
-          <motion.div
-            className="text-center mb-16"
-            initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-          >
-            <span className="text-primary font-medium">
-              Why Choose TaskFlow
-            </span>
-            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mt-2">
-              Built different, built better
-            </h2>
-          </motion.div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Built for Simplicity",
-                description:
-                  "Clean, intuitive interface focused on personal task management.",
-              },
-              {
-                title: "Privacy First",
-                description:
-                  "Your data is secured with Clerk authentication and protected storage.",
-              },
-              {
-                title: "Always Improving",
-                description:
-                  "Regular updates and enhancements to make task management better.",
-              },
-            ].map((item, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0 }}
-                whileInView={{ opacity: 1 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="p-6 rounded-lg bg-card border"
-              >
-                <h3 className="font-semibold mb-2">{item.title}</h3>
-                <p className="text-muted-foreground">{item.description}</p>
-              </motion.div>
-            ))}
           </div>
         </div>
       </section>
 
       {/* Features Showcase */}
-      <section className="py-24 px-4">
-        <div className="max-w-7xl mx-auto">
+      <section className="py-24">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
             className="text-center mb-16"
             initial={{ opacity: 0 }}
@@ -317,9 +250,60 @@ export default function Home() {
         </div>
       </section>
 
-      {/* How It Works Section with Screenshots */}
-      <section className="py-24 px-4">
-        <div className="max-w-7xl mx-auto">
+      {/* Why TaskFlow Section */}
+      <section className="py-24 bg-muted/10">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+          >
+            <span className="text-primary font-medium">
+              Why Choose TaskFlow
+            </span>
+            <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mt-2">
+              Built different, built better
+            </h2>
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                title: "Built for Simplicity",
+                description:
+                  "Clean, intuitive interface focused on personal task management.",
+              },
+              {
+                title: "Privacy First",
+                description:
+                  "Your data is secured with Clerk authentication and protected storage.",
+              },
+              {
+                title: "Always Improving",
+                description:
+                  "Regular updates and enhancements to make task management better.",
+              },
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="p-6 rounded-xl bg-card border hover:shadow-lg transition-all"
+              >
+                <h3 className="font-semibold text-xl mb-2">{item.title}</h3>
+                <p className="text-muted-foreground">{item.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="py-24">
+        <div className="container max-w-7xl mx-auto px-4 sm:px-6">
           <motion.div
             className="text-center mb-16"
             initial={{ opacity: 0 }}
@@ -333,13 +317,8 @@ export default function Home() {
               Simple steps to boost your productivity
             </p>
           </motion.div>
-          <motion.div
-            className="grid grid-cols-1 md:grid-cols-3 gap-8"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
             {[
               {
                 step: "1",
@@ -361,24 +340,26 @@ export default function Home() {
             ].map((item, index) => (
               <motion.div
                 key={index}
-                variants={itemVariants}
-                className="text-center"
-                whileHover={{ scale: 1.05 }}
+                className="text-center space-y-4"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.2 }}
               >
-                <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground font-bold text-xl flex items-center justify-center mx-auto mb-4">
+                <div className="w-12 h-12 rounded-full bg-primary text-primary-foreground font-bold text-xl flex items-center justify-center mx-auto">
                   {item.step}
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{item.title}</h3>
+                <h3 className="text-xl font-semibold">{item.title}</h3>
                 <p className="text-muted-foreground">{item.description}</p>
               </motion.div>
             ))}
-          </motion.div>
+          </div>
         </div>
       </section>
 
       {/* FAQ Section */}
-      <section className="py-24 px-4">
-        <div className="max-w-3xl mx-auto">
+      <section className="py-24 bg-muted/10">
+        <div className="container max-w-3xl mx-auto px-4 sm:px-6">
           <motion.div
             className="text-center mb-16"
             initial={{ opacity: 0 }}
@@ -392,10 +373,9 @@ export default function Home() {
           </motion.div>
 
           <motion.div
-            className="space-y-4"
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
+            className="space-y-6"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
           >
             {[
@@ -414,10 +394,13 @@ export default function Home() {
             ].map((faq, index) => (
               <motion.div
                 key={index}
-                variants={itemVariants}
-                className="p-6 rounded-xl bg-card border"
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="p-6 rounded-xl bg-card border hover:shadow-lg transition-all"
               >
-                <h3 className="font-semibold mb-2">{faq.q}</h3>
+                <h3 className="font-semibold text-lg mb-2">{faq.q}</h3>
                 <p className="text-muted-foreground">{faq.a}</p>
               </motion.div>
             ))}
@@ -425,41 +408,39 @@ export default function Home() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Modern CTA Section */}
       {!isSignedIn && (
         <motion.section
-          className="py-24 px-4 bg-muted/10"
+          className="py-24"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
         >
-          <div className="max-w-3xl mx-auto text-center space-y-6">
-            <div className="space-y-4">
-              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl">
+          <div className="container max-w-5xl mx-auto px-4 sm:px-6">
+            <div className="relative z-10 bg-card border rounded-3xl p-12 text-center">
+              <h2 className="text-3xl font-bold tracking-tight sm:text-4xl mb-4">
                 Start organizing your tasks today
               </h2>
-              <p className="text-lg text-muted-foreground">
+              <p className="text-lg text-muted-foreground mb-8">
                 Simple, free, and designed to help you focus on what matters
               </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button asChild size="lg" className="rounded-lg font-medium">
-                  <Link href="/sign-up">Get Started Free</Link>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                <Button size="lg" asChild>
+                  <Link href="/sign-up">
+                    Get Started Free
+                    <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
                 </Button>
-              </motion.div>
-              <span className="text-sm text-muted-foreground">
-                No credit card required • Free forever
-              </span>
+                <span className="text-sm text-muted-foreground">
+                  No credit card required • Free forever
+                </span>
+              </div>
             </div>
           </div>
         </motion.section>
       )}
 
+      {/* Footer Section */}
       <footer className="border-t py-8 px-4">
         <div className="max-w-3xl mx-auto text-center space-y-4">
           <div className="text-sm text-muted-foreground">

@@ -15,6 +15,7 @@ import { DashboardProvider, useDashboard } from "@/context/dashboard-context";
 function DashboardContent({ children }) {
   const [isMobile, setIsMobile] = useState(false);
   const { activeSection, setActiveSection } = useDashboard();
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -27,6 +28,15 @@ function DashboardContent({ children }) {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
   const menuItems = [
     { icon: LayoutDashboard, label: "Overview", id: "overview" },
     { icon: CheckSquare, label: "Tasks", id: "tasks" },
@@ -36,7 +46,13 @@ function DashboardContent({ children }) {
   return (
     <div className="flex flex-col h-screen bg-background lg:flex-row">
       {/* Header */}
-      <header className="flex items-center justify-between h-16 px-4 border-b border-border backdrop-blur-lg bg-background/80 fixed w-full top-0 z-30">
+      <header
+        className={`flex items-center justify-between h-16 px-4 fixed w-full top-0 z-30 transition-all duration-300 ${
+          isScrolled
+            ? "bg-background/80 backdrop-blur-lg border-b border-border"
+            : "bg-transparent border-transparent"
+        }`}
+      >
         <Link href="/" className="flex items-center gap-3">
           <div className="bg-primary w-8 h-8 rounded-lg flex items-center justify-center">
             <span className="text-primary-foreground font-medium">T</span>
@@ -49,7 +65,7 @@ function DashboardContent({ children }) {
           <Link
             href="/"
             className={`${
-              isMobile ? "" : "text-muted-foreground"
+              isMobile ? "" : "text-sm text-muted-foreground"
             } hover:text-foreground transition-colors font-medium flex items-center gap-2`}
           >
             {isMobile ? <House size={16} /> : "Home"}
