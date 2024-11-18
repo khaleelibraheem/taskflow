@@ -7,7 +7,7 @@ export const metadata = {
 export default function PrivacyPage() {
   return (
     <main className="min-h-[calc(100vh-4rem)] bg-background">
-      <div className="container max-w-3xl mx-auto px-4 sm:px-6 py-14 lg:py-16">
+      <div className="container max-w-3xl mx-auto px-4 sm:px-6 py-20 lg:py-16">
         <div className="space-y-8 sm:space-y-12">
           {/* Header */}
           <header className="space-y-4">

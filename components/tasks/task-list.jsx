@@ -134,7 +134,13 @@ export function TaskList({ filters, onFilterChange }) {
       </div>
     );
   }
-
+  if (filteredTasks.length === 0) {
+    return (
+      <Card className="p-6">
+        <p className="text-muted-foreground text-center">No tasks found.</p>
+      </Card>
+    );
+  }
   return (
     <>
       <TaskSearch filters={filters} onFilterChange={onFilterChange} />
