@@ -1,4 +1,3 @@
-// components/tasks/create-task-form.jsx
 "use client";
 
 import { useState } from "react";
@@ -23,9 +22,11 @@ import { cn } from "@/lib/utils";
 import { ResponsiveCalendar } from "@/components/ui/responsive-calendar";
 import { toast } from "sonner";
 import { useTasks } from "@/hooks/use-tasks";
+import { useNotifications } from "@/hooks/use-notifications";
 
 export function CreateTaskForm({ closeDialog, defaultProjectId }) {
   const { createTask } = useTasks();
+  const { scheduleNotification } = useNotifications();
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState();
 
@@ -43,7 +44,8 @@ export function CreateTaskForm({ closeDialog, defaultProjectId }) {
     };
 
     try {
-      await createTask(data);
+      const task = await createTask(data);
+      scheduleNotification(task);
       closeDialog();
       toast.success("Task created successfully");
     } catch (error) {

@@ -23,8 +23,10 @@ import { cn } from "@/lib/utils";
 import { ResponsiveCalendar } from "@/components/ui/responsive-calendar";
 import { toast } from "sonner";
 import { useTasks } from "@/hooks/use-tasks";
+import { useNotifications } from "@/hooks/use-notifications";
 
 export function EditTaskForm({ task, closeDialog }) {
+  const { updateNotification } = useNotifications();
   const { updateTask } = useTasks();
   const [loading, setLoading] = useState(false);
   const [date, setDate] = useState(
@@ -44,7 +46,8 @@ export function EditTaskForm({ task, closeDialog }) {
     };
 
     try {
-      await updateTask(task.id, data);
+      const updatedTask = await updateTask(task.id, data);
+      updateNotification(updatedTask);
       closeDialog();
       toast.success("Task updated successfully");
     } catch (error) {

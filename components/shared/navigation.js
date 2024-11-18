@@ -77,6 +77,7 @@ export function Navigation() {
             >
               About
             </Link>
+
             <Link
               href="/help"
               className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"

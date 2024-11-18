@@ -14,14 +14,6 @@
     ],
     "lang": "en",
     "dir": "ltr",
-    "screenshots": [
-        {
-            "src": "/screenshots/dashboard.png",
-            "type": "image/png",
-            "sizes": "1280x720",
-            "form_factor": "wide"
-        }
-    ],
     "icons": [
         {
             "src": "/favicon.ico",

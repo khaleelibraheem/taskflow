@@ -45,8 +45,10 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { TaskDetailModal } from "./task-detail-modal";
 import { PriorityBadge, StatusBadge } from "./badges";
 import { useTasks } from "@/hooks/use-tasks";
+import { useNotifications } from "@/hooks/use-notifications";
 
 export function TaskList({ filters, onFilterChange }) {
+  const { clearNotifications } = useNotifications();
   const { tasks, loading, error, updateTask, deleteTask } = useTasks();
   const [editingTask, setEditingTask] = useState(null);
   const [selectedTasks, setSelectedTasks] = useState([]);
@@ -85,6 +87,7 @@ export function TaskList({ filters, onFilterChange }) {
   const handleDelete = async (taskId) => {
     try {
       await deleteTask(taskId);
+      clearNotifications(taskId);
       setTaskToDelete(null);
       toast.success("Task deleted successfully");
     } catch (error) {

@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { DashboardProvider, useDashboard } from "@/context/dashboard-context";
+import { NotificationToggle } from "@/components/notifications/notification-toggle";
 
 function DashboardContent({ children }) {
   const [isMobile, setIsMobile] = useState(false);
@@ -62,6 +63,7 @@ function DashboardContent({ children }) {
           </span>
         </Link>
         <div className="flex items-center gap-3">
+          <NotificationToggle />
           <Link
             href="/"
             className={`${
