@@ -1,3 +1,4 @@
+// components/tasks/edit-task-form.jsx
 "use client";
 
 import { useState } from "react";
@@ -11,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
 import {
   Popover,
   PopoverContent,
@@ -20,12 +20,13 @@ import {
 import { Calendar as CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { ResponsiveCalendar } from "../ui/responsive-calendar";
+import { ResponsiveCalendar } from "@/components/ui/responsive-calendar";
 import { toast } from "sonner";
+import { useTasks } from "@/hooks/use-tasks";
 
 export function EditTaskForm({ task, closeDialog }) {
+  const { updateTask } = useTasks();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [date, setDate] = useState(
     task.dueDate ? new Date(task.dueDate) : undefined
   );
@@ -33,7 +34,6 @@ export function EditTaskForm({ task, closeDialog }) {
   async function onSubmit(event) {
     event.preventDefault();
     setLoading(true);
-    setError("");
 
     const formData = new FormData(event.target);
     const data = {
@@ -44,24 +44,11 @@ export function EditTaskForm({ task, closeDialog }) {
     };
 
     try {
-      const response = await fetch(`/api/tasks/${task.id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update task");
-      }
-
-      window.dispatchEvent(new CustomEvent("taskUpdated"));
+      await updateTask(task.id, data);
       closeDialog();
       toast.success("Task updated successfully");
     } catch (error) {
-      console.error("Error updating task:", error);
-      setError(error.message || "Failed to update task. Please try again.");
+      toast.error("Failed to update task");
     } finally {
       setLoading(false);
     }
@@ -69,12 +56,6 @@ export function EditTaskForm({ task, closeDialog }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      {error && (
-        <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/10 p-3 rounded-md">
-          {error}
-        </div>
-      )}
-
       <div className="space-y-2">
         <Input
           id="title"
@@ -143,7 +124,7 @@ export function EditTaskForm({ task, closeDialog }) {
           Cancel
         </Button>
         <Button type="submit" disabled={loading}>
-          Update Task
+          {loading ? "Updating..." : "Update Task"}
         </Button>
       </div>
     </form>

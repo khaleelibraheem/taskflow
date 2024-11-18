@@ -1,3 +1,4 @@
+// components/tasks/task-stats.jsx
 "use client";
 
 import { Card } from "@/components/ui/card";
@@ -12,6 +13,7 @@ import {
   Legend,
   ArcElement,
 } from "chart.js";
+import { useTasks } from "@/hooks/use-tasks";
 
 // Register ChartJS components
 ChartJS.register(
@@ -24,18 +26,8 @@ ChartJS.register(
   ArcElement
 );
 
-export function TaskStats({ tasks }) {
-  const stats = {
-    total: tasks.length,
-    completed: tasks.filter((t) => t.status === "COMPLETED").length,
-    inProgress: tasks.filter((t) => t.status === "IN_PROGRESS").length,
-    todo: tasks.filter((t) => t.status === "TODO").length,
-    byPriority: {
-      HIGH: tasks.filter((t) => t.priority === "HIGH").length,
-      MEDIUM: tasks.filter((t) => t.priority === "MEDIUM").length,
-      LOW: tasks.filter((t) => t.priority === "LOW").length,
-    },
-  };
+export function TaskStats() {
+  const { tasks, loading, stats } = useTasks();
 
   const completionRate =
     stats.total > 0 ? ((stats.completed / stats.total) * 100).toFixed(1) : 0;
@@ -82,7 +74,8 @@ export function TaskStats({ tasks }) {
     ],
   };
 
-  const barOptions = {
+  // Chart options configuration...
+  const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -135,38 +128,6 @@ export function TaskStats({ tasks }) {
     },
   };
 
-  const doughnutOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "bottom",
-        labels: {
-          padding: 20,
-          font: {
-            size: 12,
-          },
-        },
-      },
-      tooltip: {
-        backgroundColor: "rgba(0, 0, 0, 0.8)",
-        padding: 12,
-        titleFont: {
-          size: 14,
-          weight: "bold",
-        },
-        bodyFont: {
-          size: 13,
-        },
-      },
-    },
-    cutout: "75%",
-    animation: {
-      animateScale: true,
-      animateRotate: true,
-    },
-  };
-
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
@@ -202,13 +163,9 @@ export function TaskStats({ tasks }) {
                   </span>
                 </div>
               ))}
-            {tasks.length === 0 && (
-              <div className="text-center py-4 text-muted-foreground">
-                No tasks found.
-              </div>
-            )}
           </div>
         </div>
+        {/* Completion Rate Card */}
         <Card className="p-4 sm:p-6">
           <h3 className="text-sm font-medium text-muted-foreground">
             Completion Rate
@@ -222,58 +179,38 @@ export function TaskStats({ tasks }) {
             </p>
           </div>
           <div className="mt-4 h-[120px] sm:h-[150px]">
-            <Doughnut data={completionChartData} options={doughnutOptions} />
+            <Doughnut
+              data={completionChartData}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: "75%",
+                plugins: {
+                  legend: {
+                    display: false,
+                  },
+                },
+              }}
+            />
           </div>
         </Card>
       </div>
 
       {/* Charts Grid */}
       <div className="grid gap-6 md:grid-cols-2">
+        {/* Status Chart */}
         <Card className="p-6">
           <h3 className="text-lg font-medium mb-6">Tasks by Status</h3>
           <div style={{ height: "300px" }}>
-            <Bar data={statusChartData} options={barOptions} />
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-semibold">{stats.todo}</div>
-              <div className="text-sm text-muted-foreground">To Do</div>
-            </div>
-            <div>
-              <div className="text-2xl font-semibold">{stats.inProgress}</div>
-              <div className="text-sm text-muted-foreground">In Progress</div>
-            </div>
-            <div>
-              <div className="text-2xl font-semibold">{stats.completed}</div>
-              <div className="text-sm text-muted-foreground">Completed</div>
-            </div>
+            <Bar data={statusChartData} options={chartOptions} />
           </div>
         </Card>
 
+        {/* Priority Chart */}
         <Card className="p-6">
           <h3 className="text-lg font-medium mb-6">Tasks by Priority</h3>
           <div style={{ height: "300px" }}>
-            <Bar data={priorityChartData} options={barOptions} />
-          </div>
-          <div className="mt-4 grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="text-2xl font-semibold">
-                {stats.byPriority.HIGH}
-              </div>
-              <div className="text-sm text-muted-foreground">High</div>
-            </div>
-            <div>
-              <div className="text-2xl font-semibold">
-                {stats.byPriority.MEDIUM}
-              </div>
-              <div className="text-sm text-muted-foreground">Medium</div>
-            </div>
-            <div>
-              <div className="text-2xl font-semibold">
-                {stats.byPriority.LOW}
-              </div>
-              <div className="text-sm text-muted-foreground">Low</div>
-            </div>
+            <Bar data={priorityChartData} options={chartOptions} />
           </div>
         </Card>
       </div>

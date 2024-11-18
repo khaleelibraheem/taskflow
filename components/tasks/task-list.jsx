@@ -1,6 +1,7 @@
+// components/tasks/task-list.jsx
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -31,7 +32,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
 import { Button } from "@/components/ui/button";
 import { EditTaskForm } from "./edit-task-form";
 import { TaskSearch } from "./task-search";
@@ -44,167 +44,65 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { TaskDetailModal } from "./task-detail-modal";
 import { PriorityBadge, StatusBadge } from "./badges";
+import { useTasks } from "@/hooks/use-tasks";
 
-export function TaskList({
-  filters,
-  onFilterChange,
-  onStatusChange,
-  onEdit,
-  onDelete,
-}) {
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+export function TaskList({ filters, onFilterChange }) {
+  const { tasks, loading, error, updateTask, deleteTask } = useTasks();
   const [editingTask, setEditingTask] = useState(null);
   const [selectedTasks, setSelectedTasks] = useState([]);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [taskToDelete, setTaskToDelete] = useState(null);
   const [showBatchDeleteDialog, setShowBatchDeleteDialog] = useState(false);
 
-  async function fetchTasks(showLoading = true) {
+  // Filter tasks based on search and filters
+  const filteredTasks = tasks.filter((task) => {
+    const matchesSearch =
+      task.title.toLowerCase().includes(filters.search.toLowerCase()) ||
+      task.description?.toLowerCase().includes(filters.search.toLowerCase());
+
+    const matchesStatus =
+      filters.status === "ALL" || task.status === filters.status;
+
+    const matchesPriority =
+      filters.priority === "ALL" || task.priority === filters.priority;
+
+    const matchesProject =
+      !filters.projectId || filters.projectId === "none"
+        ? !task.projectId
+        : task.projectId === filters.projectId;
+
+    return matchesSearch && matchesStatus && matchesPriority && matchesProject;
+  });
+
+  const handleStatusChange = async (taskId, newStatus) => {
     try {
-      if (showLoading) setLoading(true);
-      const response = await fetch("/api/tasks");
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Failed to fetch tasks");
-      }
-
-      setTasks(data);
-      setError(null);
+      await updateTask(taskId, { status: newStatus });
+      toast.success("Task status updated");
     } catch (error) {
-      console.error("Error fetching tasks:", error);
-      setError(
-        error.message || "Failed to load tasks. Please try again later."
-      );
-    } finally {
-      if (showLoading) setLoading(false);
+      toast.error("Failed to update task status");
     }
-  }
+  };
 
-  useEffect(() => {
-    fetchTasks();
-
-    // Listen for task updates
-    window.addEventListener("taskUpdated", fetchTasks);
-    window.addEventListener("taskCreated", fetchTasks);
-
-    return () => {
-      window.removeEventListener("taskUpdated", fetchTasks);
-      window.removeEventListener("taskCreated", fetchTasks);
-    };
-  }, []);
-
-  async function updateTaskStatus(taskId, status) {
+  const handleDelete = async (taskId) => {
     try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ status }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update task status");
-      }
-
-      fetchTasks(false);
-    } catch (error) {
-      console.error("Error updating task:", error);
-    }
-  }
-
-  async function deleteTask(taskId) {
-    try {
-      const response = await fetch(`/api/tasks/${taskId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to delete task");
-      }
-
-      fetchTasks();
+      await deleteTask(taskId);
+      setTaskToDelete(null);
       toast.success("Task deleted successfully");
     } catch (error) {
-      console.error("Error deleting task:", error);
       toast.error("Failed to delete task");
     }
-  }
+  };
 
-  if (loading) {
-    return <Spinner />;
-  }
-
-  if (error) {
-    return (
-      <div className="flex items-center justify-center p-8 text-red-500">
-        <AlertCircle className="w-4 h-4 mr-2" />
-        {error}
-      </div>
-    );
-  }
-
-  // Filter tasks based on search and filters
- const filteredTasks = tasks.filter((task) => {
-   const matchesSearch =
-     task.title.toLowerCase().includes(filters.search.toLowerCase()) ||
-     task.description?.toLowerCase().includes(filters.search.toLowerCase());
-
-   const matchesStatus =
-     filters.status === "ALL" || task.status === filters.status;
-
-   const matchesPriority =
-     filters.priority === "ALL" || task.priority === filters.priority;
-
-   const matchesProject =
-     !filters.projectId || filters.projectId === "none"
-       ? !task.projectId
-       : task.projectId === filters.projectId;
-
-   return matchesSearch && matchesStatus && matchesPriority && matchesProject;
- });
-
-  if (tasks.length === 0) {
-    return (
-      <Card className="p-8 text-center">
-        <p className="text-muted-foreground">
-          No tasks found. Create your first task!
-        </p>
-      </Card>
-    );
-  }
-  // Add batch action functions
-async function handleBatchAction(action) {
-  try {
-    switch (action) {
-      case "delete":
-        setShowBatchDeleteDialog(true);
-        break;
-      case "complete":
-        await Promise.all(
-          selectedTasks.map((taskId) =>
-            fetch(`/api/tasks/${taskId}`, {
-              method: "PATCH",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ status: "COMPLETED" }),
-            })
-          )
-        );
-        setSelectedTasks([]);
-        fetchTasks();
-        toast.success("Tasks marked as completed");
-        break;
+  const handleBatchDelete = async () => {
+    try {
+      await Promise.all(selectedTasks.map((taskId) => deleteTask(taskId)));
+      setSelectedTasks([]);
+      setShowBatchDeleteDialog(false);
+      toast.success(`Successfully deleted ${selectedTasks.length} tasks`);
+    } catch (error) {
+      toast.error("Failed to delete some tasks");
     }
-  } catch (error) {
-    console.error("Error performing batch action:", error);
-    toast.error("Failed to perform action");
-  }
-}
+  };
 
-  // Add selection handlers
   const toggleTaskSelection = (taskId) => {
     setSelectedTasks((prev) =>
       prev.includes(taskId)
@@ -221,6 +119,19 @@ async function handleBatchAction(action) {
     );
   };
 
+  if (loading) {
+    return <Spinner />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center p-8 text-red-500">
+        <AlertCircle className="w-4 h-4 mr-2" />
+        {error}
+      </div>
+    );
+  }
+
   return (
     <>
       <TaskSearch filters={filters} onFilterChange={onFilterChange} />
@@ -235,7 +146,19 @@ async function handleBatchAction(action) {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => handleBatchAction("complete")}
+              onClick={async () => {
+                try {
+                  await Promise.all(
+                    selectedTasks.map((taskId) =>
+                      updateTask(taskId, { status: "COMPLETED" })
+                    )
+                  );
+                  setSelectedTasks([]);
+                  toast.success("Tasks marked as completed");
+                } catch (error) {
+                  toast.error("Failed to update tasks");
+                }
+              }}
               className="text-xs sm:text-md"
             >
               Mark Complete
@@ -243,7 +166,7 @@ async function handleBatchAction(action) {
             <Button
               size="sm"
               variant="destructive"
-              onClick={() => handleBatchAction("delete")}
+              onClick={() => setShowBatchDeleteDialog(true)}
               className="text-xs sm:text-md"
             >
               Delete Selected
@@ -268,16 +191,16 @@ async function handleBatchAction(action) {
           <TaskItem
             key={task.id}
             task={task}
-            onStatusChange={updateTaskStatus}
-            onDelete={deleteTask}
+            onStatusChange={handleStatusChange}
+            setTaskToDelete={setTaskToDelete}
             onEdit={() => setEditingTask(task)}
             selected={selectedTasks.includes(task.id)}
             onToggleSelect={() => toggleTaskSelection(task.id)}
-            setTaskToDelete={setTaskToDelete}
           />
         ))}
       </div>
 
+      {/* Edit Dialog */}
       <Dialog open={!!editingTask} onOpenChange={() => setEditingTask(null)}>
         <DialogContent>
           <DialogHeader>
@@ -292,7 +215,7 @@ async function handleBatchAction(action) {
         </DialogContent>
       </Dialog>
 
-      {/* Single Delete Confirmation */}
+      {/* Delete Confirmation */}
       <AlertDialog
         open={!!taskToDelete}
         onOpenChange={() => setTaskToDelete(null)}
@@ -308,10 +231,7 @@ async function handleBatchAction(action) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                deleteTask(taskToDelete);
-                setTaskToDelete(null);
-              }}
+              onClick={() => handleDelete(taskToDelete)}
               className="bg-red-600 hover:bg-red-700"
             >
               Delete
@@ -337,19 +257,7 @@ async function handleBatchAction(action) {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={async () => {
-                await Promise.all(
-                  selectedTasks.map((taskId) =>
-                    fetch(`/api/tasks/${taskId}`, { method: "DELETE" })
-                  )
-                );
-                setSelectedTasks([]);
-                fetchTasks();
-                setShowBatchDeleteDialog(false);
-                toast.success(
-                  `Successfully deleted ${selectedTasks.length} tasks`
-                );
-              }}
+              onClick={handleBatchDelete}
               className="bg-red-600 hover:bg-red-700"
             >
               Delete Tasks
@@ -364,7 +272,6 @@ async function handleBatchAction(action) {
 export function TaskItem({
   task,
   onStatusChange,
-  onDelete,
   onEdit,
   selected,
   onToggleSelect,

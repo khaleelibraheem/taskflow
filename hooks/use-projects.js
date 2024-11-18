@@ -1,16 +1,158 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+
+import { useEffect, useState } from "react";
+import { create } from "zustand";
+
+const useProjectStore = create((set) => ({
+  projects: [],
+  initialized: false,
+  setProjects: (projects) => set({ projects, initialized: true }),
+  addProject: (project) =>
+    set((state) => ({
+      projects: [project, ...state.projects],
+    })),
+  updateProject: (projectId, updatedProject) =>
+    set((state) => ({
+      projects: state.projects.map((project) =>
+        project.id === projectId ? { ...project, ...updatedProject } : project
+      ),
+    })),
+  deleteProject: (projectId) =>
+    set((state) => ({
+      projects: state.projects.filter((project) => project.id !== projectId),
+    })),
+}));
 
 export function useProjects() {
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    projects,
+    initialized,
+    setProjects,
+    addProject,
+    updateProject: updateProjectInStore,
+    deleteProject: deleteProjectFromStore,
+  } = useProjectStore();
+  const [loading, setLoading] = useState(!initialized);
   const [error, setError] = useState(null);
-  const router = useRouter();
 
-  async function fetchProjects() {
+  useEffect(() => {
+    const fetchProjects = async () => {
+      if (initialized) return;
+
+      try {
+        setLoading(true);
+        const response = await fetch("/api/projects");
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || "Failed to fetch projects");
+        }
+
+        const sortedData = data.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
+
+        setProjects(sortedData);
+        setError(null);
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+        setError(error.message || "Failed to load projects");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, [initialized]);
+
+  const createProject = async (projectData) => {
+    const tempId = `temp-${Date.now()}`;
+    const tempProject = {
+      id: tempId,
+      ...projectData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      tasks: [],
+    };
+
     try {
-      setLoading(true);
+      addProject(tempProject);
+
+      const response = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(projectData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to create project");
+      }
+
+      const createdProject = await response.json();
+      updateProjectInStore(tempId, createdProject);
+
+      return createdProject;
+    } catch (error) {
+      deleteProjectFromStore(tempId);
+      throw error;
+    }
+  };
+
+  const updateProject = async (projectId, projectData) => {
+    const originalProject = projects.find(
+      (project) => project.id === projectId
+    );
+
+    try {
+      updateProjectInStore(projectId, {
+        ...projectData,
+        updatedAt: new Date().toISOString(),
+      });
+
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(projectData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update project");
+      }
+
+      const updatedProject = await response.json();
+      updateProjectInStore(projectId, updatedProject);
+
+      return updatedProject;
+    } catch (error) {
+      updateProjectInStore(projectId, originalProject);
+      throw error;
+    }
+  };
+
+  const deleteProject = async (projectId) => {
+    const projectToDelete = projects.find(
+      (project) => project.id === projectId
+    );
+
+    try {
+      deleteProjectFromStore(projectId);
+
+      const response = await fetch(`/api/projects/${projectId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete project");
+      }
+    } catch (error) {
+      addProject(projectToDelete);
+      throw error;
+    }
+  };
+
+  const refetch = async () => {
+    setLoading(true);
+    try {
       const response = await fetch("/api/projects");
       const data = await response.json();
 
@@ -18,132 +160,27 @@ export function useProjects() {
         throw new Error(data.error || "Failed to fetch projects");
       }
 
-      setProjects(data);
+      const sortedData = data.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+
+      setProjects(sortedData);
       setError(null);
     } catch (error) {
-      console.error("Error fetching projects:", error);
-      setError(error.message || "Failed to load projects");
+      console.error("Error refetching projects:", error);
+      setError(error.message || "Failed to refresh projects");
     } finally {
       setLoading(false);
     }
-  }
-
-  async function createProject(projectData) {
-    try {
-      const response = await fetch("/api/projects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(projectData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to create project");
-      }
-
-      // Update local state immediately
-      setProjects((prevProjects) => [...prevProjects, data]);
-
-      // Trigger refresh events
-      window.dispatchEvent(new Event("projectUpdated"));
-      router.refresh();
-
-      console.log("Project created successfully:", data);
-
-      return data;
-    } catch (error) {
-      console.error("Error creating project:", error);
-      throw error;
-    }
-  }
-
-  // In useProjects.js
-  async function updateProject(projectId, projectData) {
-    try {
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(projectData),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Failed to update project");
-      }
-
-      // Update local state immediately
-      setProjects((prevProjects) =>
-        prevProjects.map((project) =>
-          project.id === projectId ? { ...project, ...data } : project
-        )
-      );
-
-      // Trigger refresh events
-      window.dispatchEvent(new Event("projectUpdated"));
-      router.refresh();
-
-      return data;
-    } catch (error) {
-      console.error("Error updating project:", error);
-      throw error;
-    }
-  }
-
-  async function deleteProject(projectId) {
-    try {
-      const response = await fetch(`/api/projects/${projectId}`, {
-        method: "DELETE",
-      });
-
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error || "Failed to delete project");
-      }
-
-      // Update local state immediately
-      setProjects((prevProjects) =>
-        prevProjects.filter((project) => project.id !== projectId)
-      );
-
-      // Trigger refresh events
-      window.dispatchEvent(new Event("projectUpdated"));
-      router.refresh();
-    } catch (error) {
-      console.error("Error deleting project:", error);
-      throw error;
-    }
-  }
-
-  // Add event listener for project updates
-  useEffect(() => {
-    const handleProjectUpdate = () => {
-      fetchProjects();
-    };
-
-    window.addEventListener("projectUpdated", handleProjectUpdate);
-    return () => {
-      window.removeEventListener("projectUpdated", handleProjectUpdate);
-    };
-  }, []);
-
-  // Initial fetch
-  useEffect(() => {
-    fetchProjects();
-  }, []);
+  };
 
   return {
     projects,
     loading,
     error,
     createProject,
-    deleteProject,
-    refetch: fetchProjects,
     updateProject,
+    deleteProject,
+    refetch,
   };
 }

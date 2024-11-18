@@ -1,7 +1,7 @@
+// components/tasks/create-task-form.jsx
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,22 +22,16 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ResponsiveCalendar } from "@/components/ui/responsive-calendar";
 import { toast } from "sonner";
+import { useTasks } from "@/hooks/use-tasks";
 
-export function CreateTaskForm({
-  closeDialog,
-  defaultProjectId,
-  redirectToTasks = true,
-}) {
-  const router = useRouter();
+export function CreateTaskForm({ closeDialog, defaultProjectId }) {
+  const { createTask } = useTasks();
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [date, setDate] = useState();
-  const [projectId, setProjectId] = useState(defaultProjectId || "none");
 
   async function onSubmit(event) {
     event.preventDefault();
     setLoading(true);
-    setError("");
 
     const formData = new FormData(event.target);
     const data = {
@@ -45,33 +39,15 @@ export function CreateTaskForm({
       description: formData.get("description") || "",
       priority: formData.get("priority") || "MEDIUM",
       dueDate: date,
-      projectId: projectId === "none" ? null : projectId,
+      projectId: defaultProjectId === "none" ? null : defaultProjectId,
     };
 
     try {
-      const response = await fetch("/api/tasks", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to create task");
-      }
-      // Dispatch the taskUpdated event before closing the dialog
-      window.dispatchEvent(new Event("taskUpdated"));
-
-      // Refresh the page data
-      router.refresh();
+      await createTask(data);
       closeDialog();
-      if (redirectToTasks) {
-        router.push("/dashboard?section=tasks");
-      }
       toast.success("Task created successfully");
     } catch (error) {
-      setError(error.message || "Failed to create task");
+      toast.error("Failed to create task");
     } finally {
       setLoading(false);
     }
@@ -79,11 +55,6 @@ export function CreateTaskForm({
 
   return (
     <form onSubmit={onSubmit} className="space-y-4">
-      {error && (
-        <div className="text-sm text-red-500 bg-red-50 dark:bg-red-900/10 p-3 rounded-md">
-          {error}
-        </div>
-      )}
       <div className="space-y-2">
         <Input
           id="title"
@@ -93,6 +64,7 @@ export function CreateTaskForm({
           disabled={loading}
         />
       </div>
+
       <div className="space-y-2">
         <Textarea
           id="description"
@@ -101,6 +73,7 @@ export function CreateTaskForm({
           disabled={loading}
         />
       </div>
+
       <div className="space-y-2">
         <Select name="priority" defaultValue="MEDIUM">
           <SelectTrigger>
@@ -113,6 +86,7 @@ export function CreateTaskForm({
           </SelectContent>
         </Select>
       </div>
+
       <div className="space-y-2">
         <Popover>
           <PopoverTrigger asChild>
@@ -141,12 +115,13 @@ export function CreateTaskForm({
           </PopoverContent>
         </Popover>
       </div>
+
       <div className="flex justify-end gap-3">
         <Button type="button" variant="outline" onClick={closeDialog}>
           Cancel
         </Button>
         <Button type="submit" disabled={loading}>
-          Create Task
+          {loading ? "Creating..." : "Create Task"}
         </Button>
       </div>
     </form>

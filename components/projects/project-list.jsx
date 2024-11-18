@@ -75,7 +75,7 @@ export function ProjectList() {
       setSelectedProjects(new Set());
       setShowDeleteDialog(false);
 
-      toast.success(`Successfully deleted ${projectsToDelete.length} projects`);
+      toast.success(`Successfully deleted ${projectsToDelete.length} project(s)`);
     } catch (error) {
       toast.error("Failed to delete some projects");
       console.error("Batch delete error:", error);

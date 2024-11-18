@@ -1,39 +1,95 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { create } from "zustand";
+
+const useTaskStore = create((set) => ({
+  tasks: [],
+  initialized: false,
+  setTasks: (tasks) => set({ tasks, initialized: true }),
+  addTask: (task) =>
+    set((state) => ({
+      tasks: [task, ...state.tasks],
+    })),
+  updateTask: (taskId, updatedTask) =>
+    set((state) => ({
+      tasks: state.tasks.map((task) =>
+        task.id === taskId ? { ...task, ...updatedTask } : task
+      ),
+    })),
+  deleteTask: (taskId) =>
+    set((state) => ({
+      tasks: state.tasks.filter((task) => task.id !== taskId),
+    })),
+  batchUpdateTasks: (taskIds, updates) =>
+    set((state) => ({
+      tasks: state.tasks.map((task) =>
+        taskIds.includes(task.id) ? { ...task, ...updates } : task
+      ),
+    })),
+  batchDeleteTasks: (taskIds) =>
+    set((state) => ({
+      tasks: state.tasks.filter((task) => !taskIds.includes(task.id)),
+    })),
+}));
 
 export function useTasks() {
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    tasks,
+    initialized,
+    setTasks,
+    addTask,
+    updateTask: updateTaskInStore,
+    deleteTask: deleteTaskFromStore,
+  } = useTaskStore();
+  const [loading, setLoading] = useState(!initialized);
   const [error, setError] = useState(null);
 
-   async function fetchTasks() {
-     try {
-       const response = await fetch("/api/tasks");
-       const data = await response.json();
+  useEffect(() => {
+    const fetchTasks = async () => {
+      if (initialized) return;
 
-       if (!response.ok) {
-         throw new Error(data.message || "Failed to fetch tasks");
-       }
+      try {
+        setLoading(true);
+        const response = await fetch("/api/tasks");
+        const data = await response.json();
 
-       setTasks(data);
-       setError(null);
-     } catch (error) {
-       console.error("Error fetching tasks:", error);
-       setError(error.message || "Failed to load tasks");
-     } finally {
-       setLoading(false);
-     }
-   }
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to fetch tasks");
+        }
 
+        const sortedData = data.sort(
+          (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+        );
 
-  async function createTask(taskData) {
+        setTasks(sortedData);
+        setError(null);
+      } catch (error) {
+        console.error("Error fetching tasks:", error);
+        setError(error.message || "Failed to load tasks");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchTasks();
+  }, [initialized]);
+
+  const createTask = async (taskData) => {
+    const tempId = `temp-${Date.now()}`;
+    const tempTask = {
+      id: tempId,
+      ...taskData,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
     try {
+      addTask(tempTask);
+
       const response = await fetch("/api/tasks", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(taskData),
       });
 
@@ -41,97 +97,64 @@ export function useTasks() {
         throw new Error("Failed to create task");
       }
 
-      await fetchTasks();
-      window.dispatchEvent(new Event("taskUpdated"));
+      const createdTask = await response.json();
+      updateTaskInStore(tempId, createdTask);
+
+      return createdTask;
     } catch (error) {
-      console.error("Error creating task:", error);
+      deleteTaskFromStore(tempId);
       throw error;
     }
-  }
+  };
 
-   async function updateTask(taskId, updatedData) {
-     try {
-       const response = await fetch(`/api/tasks/${taskId}`, {
-         method: "PATCH",
-         headers: {
-           "Content-Type": "application/json",
-         },
-         body: JSON.stringify(updatedData),
-       });
+  const updateTask = async (taskId, updatedData) => {
+    const originalTask = tasks.find((task) => task.id === taskId);
 
-       if (!response.ok) {
-         const errorData = await response.json();
-         throw new Error(errorData.message || "Failed to update task");
-       }
-
-       await fetchTasks(); // Refresh the task list after successful update
-       window.dispatchEvent(new Event("taskUpdated")); // Trigger update event
-       return true; // Return success
-     } catch (error) {
-       console.error("Error updating task:", error);
-       throw error; // Re-throw to handle in the component
-     }
-   }
-
-  async function deleteTask(taskId) {
     try {
+      updateTaskInStore(taskId, {
+        ...updatedData,
+        updatedAt: new Date().toISOString(),
+      });
+
+      const response = await fetch(`/api/tasks/${taskId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update task");
+      }
+
+      const updatedTask = await response.json();
+      updateTaskInStore(taskId, updatedTask);
+
+      return updatedTask;
+    } catch (error) {
+      updateTaskInStore(taskId, originalTask);
+      throw error;
+    }
+  };
+
+  const deleteTask = async (taskId) => {
+    const taskToDelete = tasks.find((task) => task.id === taskId);
+
+    try {
+      deleteTaskFromStore(taskId);
+
       const response = await fetch(`/api/tasks/${taskId}`, {
         method: "DELETE",
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to delete task");
+        throw new Error("Failed to delete task");
       }
-
-      await fetchTasks(); // Refresh the task list after successful deletion
-      window.dispatchEvent(new Event("taskUpdated")); // Trigger update event
     } catch (error) {
-      console.error("Error deleting task:", error);
+      addTask(taskToDelete);
       throw error;
     }
-  }
+  };
 
-
-  async function batchUpdateTasks(taskIds, updateData) {
-    try {
-      await Promise.all(
-        taskIds.map((taskId) =>
-          fetch(`/api/tasks/${taskId}`, {
-            method: "PATCH",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify(updateData),
-          })
-        )
-      );
-
-      await fetchTasks();
-    } catch (error) {
-      console.error("Error updating tasks:", error);
-      throw error;
-    }
-  }
-
-  async function batchDeleteTasks(taskIds) {
-    try {
-      await Promise.all(
-        taskIds.map((taskId) =>
-          fetch(`/api/tasks/${taskId}`, {
-            method: "DELETE",
-          })
-        )
-      );
-
-      await fetchTasks();
-    } catch (error) {
-      console.error("Error deleting tasks:", error);
-      throw error;
-    }
-  }
-
-  // Get tasks statistics
   const stats = {
     total: tasks.length,
     completed: tasks.filter((t) => t.status === "COMPLETED").length,
@@ -144,18 +167,29 @@ export function useTasks() {
     },
   };
 
-  // Listen for task updates
-  useEffect(() => {
-    fetchTasks();
+  const refetch = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch("/api/tasks");
+      const data = await response.json();
 
-    window.addEventListener("taskCreated", fetchTasks);
-    window.addEventListener("taskUpdated", fetchTasks);
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to fetch tasks");
+      }
 
-    return () => {
-      window.removeEventListener("taskCreated", fetchTasks);
-      window.removeEventListener("taskUpdated", fetchTasks);
-    };
-  }, []);
+      const sortedData = data.sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+
+      setTasks(sortedData);
+      setError(null);
+    } catch (error) {
+      console.error("Error refetching tasks:", error);
+      setError(error.message || "Failed to refresh tasks");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return {
     tasks,
@@ -165,8 +199,6 @@ export function useTasks() {
     createTask,
     updateTask,
     deleteTask,
-    batchUpdateTasks,
-    batchDeleteTasks,
-    refetch: fetchTasks,
+    refetch,
   };
 }
